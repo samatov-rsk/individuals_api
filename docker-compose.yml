@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    entrypoint: >
+      /opt/keycloak/bin/kc.sh start-dev
+      --http-relative-path=/auth
+    ports:
+      - "8081:8080"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - KEYCLOAK_ISSUER_URI=http://localhost:8081/auth/realms/individuals
+      - KEYCLOAK_CLIENT_ID=individuals-api
+      - KEYCLOAK_CLIENT_SECRET=zPltnoETpD4m4ruI17Y3W0offY9y4sYz
+    ports:
+      - "8080:8080"
+    depends_on:
+      - keycloak
