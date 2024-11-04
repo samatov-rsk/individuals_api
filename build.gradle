@@ -13,8 +13,6 @@ repositories {
 }
 
 dependencies {
-    runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.96.Final' // Укажите версию, соответствующую вашей версии Netty
-
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'com.auth0:java-jwt:3.18.2'
 
