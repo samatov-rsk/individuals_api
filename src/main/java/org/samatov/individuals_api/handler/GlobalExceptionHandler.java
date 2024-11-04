@@ -1,42 +1,63 @@
 package org.samatov.individuals_api.handler;
 
-import org.samatov.individuals_api.exception.RegistrationException;
+import org.samatov.individuals_api.exception.AuthenticationException;
+import org.samatov.individuals_api.exception.UserAlreadyExistsException;
 import org.samatov.individuals_api.exception.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebExceptionHandler;
+import reactor.core.publisher.Mono;
 
-import javax.naming.AuthenticationException;
+import java.util.Map;
 
 @ControllerAdvice
-public class GlobalExceptionHandler {
+@Order(-2)
+public class GlobalExceptionHandler implements WebExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(RegistrationException.class)
-    public ResponseEntity<String> handleRegistrationException(RegistrationException ex) {
-        logger.error("Ошибка регистрации: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка регистрации: " + ex.getMessage());
-    }
+    @Override
+    public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
+        HttpStatus status;
+        String errorMessage;
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<String> handleAuthenticationException(AuthenticationException ex) {
-        logger.error("Ошибка аутентификации: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Ошибка аутентификации: " + ex.getMessage());
-    }
+        if (ex instanceof UserNotFoundException) {
+            status = HttpStatus.NOT_FOUND;
+            errorMessage = ex.getMessage();
+        } else if (ex instanceof AuthenticationException) {
+            status = HttpStatus.UNAUTHORIZED;
+            errorMessage = ex.getMessage();
+        } else if (ex instanceof UserAlreadyExistsException) {
+            status = HttpStatus.CONFLICT;
+            errorMessage = ex.getMessage();
+        } else if (ex instanceof IllegalArgumentException) {
+            status = HttpStatus.BAD_REQUEST;
+            errorMessage = ex.getMessage();
+        } else {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            errorMessage = "An unexpected error occurred";
+        }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<String> handleUserNotFoundException(UserNotFoundException ex) {
-        logger.error("Пользователь не найден: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Пользователь не найден: " + ex.getMessage());
-    }
+        logger.error("Error occurred: {} - {}", status, errorMessage, ex);
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGeneralException(Exception ex) {
-        logger.error("Внутренняя ошибка сервера: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Внутренняя ошибка сервера: " + ex.getMessage());
+        exchange.getResponse().setStatusCode(status);
+        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> errorAttributes = Map.of(
+                "status", status.value(),
+                "error", status.getReasonPhrase(),
+                "message", errorMessage,
+                "path", exchange.getRequest().getPath().value()
+        );
+
+        return exchange.getResponse()
+                .writeWith(Mono.just(exchange.getResponse()
+                        .bufferFactory()
+                        .wrap(errorAttributes.toString().getBytes())));
     }
 }

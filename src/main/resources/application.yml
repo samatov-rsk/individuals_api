@@ -2,34 +2,33 @@ server:
   port: 8080
 
 spring:
-  webflux:
-    base-path: /api
-  main:
-    allow-bean-definition-overriding: true
-    web-application-type: reactive
   application:
-    name: keycloak-auth-service
+    name: individuals-api
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8081/auth/realms/individuals
-          jwk-set-uri: http://localhost:8081/auth/realms/individuals/protocol/openid-connect/certs
-          jwks: http://localhost:8081/auth/realms/individuals/protocol/openid-connect/token
+          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI}/protocol/openid-connect/certs
       client:
         registration:
           keycloak:
-            client-id: individuals-api
-            client-secret: 5N7lXXF9M56qA77Do0c0lsRcQzU3gk4v
+            client-id: ${KEYCLOAK_CLIENT_ID}
+            client-secret: ${KEYCLOAK_CLIENT_SECRET}
             scope: openid, profile
             authorization-grant-type: authorization_code
         provider:
           keycloak:
-            issuer-uri: http://localhost:8081/auth/realms/individuals
+            issuer-uri: ${KEYCLOAK_ISSUER_URI}
             user-name-attribute: email
 
+KEYCLOAK_ISSUER_URI: http://localhost:8081/auth/realms/individuals
+KEYCLOAK_CLIENT_ID: individuals-api
+KEYCLOAK_CLIENT_SECRET: 5N7lXXF9M56qA77Do0c0lsRcQzU3gk4v
+
 keycloak:
+  admin-username: admin
+  admin-password: admin
   realm: individuals
   auth-server-url: http://localhost:8081/auth
-
 
