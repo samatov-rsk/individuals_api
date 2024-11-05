@@ -1,10 +1,10 @@
 package org.samatov.individuals_api.handler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.samatov.individuals_api.exception.AuthenticationException;
 import org.samatov.individuals_api.exception.UserAlreadyExistsException;
 import org.samatov.individuals_api.exception.UserNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,9 +17,10 @@ import java.util.Map;
 
 @ControllerAdvice
 @Order(-2)
+@Slf4j
 public class GlobalExceptionHandler implements WebExceptionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
@@ -43,7 +44,7 @@ public class GlobalExceptionHandler implements WebExceptionHandler {
             errorMessage = "An unexpected error occurred";
         }
 
-        logger.error("Error occurred: {} - {}", status, errorMessage, ex);
+        log.error("Error occurred: {} - {}", status, errorMessage, ex);
 
         exchange.getResponse().setStatusCode(status);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
@@ -55,9 +56,15 @@ public class GlobalExceptionHandler implements WebExceptionHandler {
                 "path", exchange.getRequest().getPath().value()
         );
 
-        return exchange.getResponse()
-                .writeWith(Mono.just(exchange.getResponse()
-                        .bufferFactory()
-                        .wrap(errorAttributes.toString().getBytes())));
+        try {
+            byte[] jsonBytes = objectMapper.writeValueAsBytes(errorAttributes);
+            return exchange.getResponse()
+                    .writeWith(Mono.just(exchange.getResponse()
+                            .bufferFactory()
+                            .wrap(jsonBytes)));
+        } catch (Exception e) {
+            log.error("Failed to write error response", e);
+            return Mono.error(e);
+        }
     }
 }

@@ -18,5 +18,6 @@ public record TokenResponse(
 
         @Schema(description = "Тип токена, обычно 'Bearer'", example = "Bearer")
         @JsonProperty("token_type")
-        String token_type
+        String token_type,
+        String message
 ) {}

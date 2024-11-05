@@ -7,6 +7,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.samatov.individuals_api.dto.*;
+import org.samatov.individuals_api.exception.AuthenticationException;
+import org.samatov.individuals_api.exception.UserAlreadyExistsException;
+import org.samatov.individuals_api.exception.UserNotFoundException;
 import org.samatov.individuals_api.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 
 @RestController
@@ -41,8 +46,23 @@ public class AuthController {
     @PostMapping("/registration")
     public Mono<ResponseEntity<TokenResponse>> registerUser(@Valid @RequestBody CreateUserRequest request) {
         return authService.registerUser(request)
-                .map(token -> ResponseEntity.status(HttpStatus.CREATED).body(token))
-                .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null)));
+                .map(token -> {
+                    return ResponseEntity.status(HttpStatus.CREATED).body(new TokenResponse(
+                            token.accessToken(),
+                            token.expires_in(),
+                            token.refresh_token(),
+                            token.token_type(),
+                            null
+                    ));
+                })
+                .onErrorResume(UserAlreadyExistsException.class, e -> {
+                    TokenResponse errorResponse = new TokenResponse(null,0,null,"",e.getMessage());
+                    return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse));
+                })
+                .onErrorResume(IllegalArgumentException.class, e -> {
+                    TokenResponse errorResponse = new TokenResponse(null,0,null,"",e.getMessage());
+                    return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse));
+                });
     }
 
     @Operation(
@@ -93,10 +113,26 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "Пользователь не найден")
     })
     @GetMapping("/me/{id}")
-    public Mono<ResponseEntity<UserResponse>> getUserInfo(@PathVariable String id,
-                                                          @RequestHeader("Authorization") String token) {
+    public Mono<ResponseEntity<Map<String, Object>>> getUserInfo(@PathVariable String id,
+                                                                 @RequestHeader("Authorization") String token) {
         return authService.getUserInfo(id, token.replace("Bearer ", ""))
-                .map(ResponseEntity::ok)
-                .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null)));
+                .map(userResponse -> ResponseEntity.ok(Map.of(
+                        "id", userResponse.id(),
+                        "username", userResponse.username(),
+                        "email", userResponse.email(),
+                        "roles", userResponse.roles(),
+                        "created_at", userResponse.createdAt()
+                )))
+                .onErrorResume(e -> {
+                    if (e instanceof UserNotFoundException) {
+                        return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                .body(Map.of("message", e.getMessage())));
+                    } else if (e instanceof AuthenticationException) {
+                        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .body(Map.of("message", e.getMessage())));
+                    }
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(Map.of("message", "An unexpected error occurred")));
+                });
     }
 }

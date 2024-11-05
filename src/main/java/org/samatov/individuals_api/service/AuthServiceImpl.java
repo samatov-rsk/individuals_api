@@ -9,11 +9,13 @@ import org.samatov.individuals_api.exception.UserAlreadyExistsException;
 import org.samatov.individuals_api.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -53,7 +55,8 @@ public class AuthServiceImpl implements AuthService {
                 .doOnNext(token -> log.info("Admin token retrieved successfully"))
                 .flatMap(adminToken -> createUserInKeycloak(adminToken, request)
                         .onErrorResume(e -> {
-                            if (e.getMessage().contains("User with this email already exists")) {
+                            if (e instanceof WebClientResponseException &&
+                                    ((WebClientResponseException) e).getStatusCode() == HttpStatus.CONFLICT) {
                                 return Mono.error(new UserAlreadyExistsException("User with this email already exists"));
                             }
                             log.error("Error creating user in Keycloak: {}", e.getMessage());
@@ -154,7 +157,7 @@ public class AuthServiceImpl implements AuthService {
         return roles;
     }
 
-    private Mono<String> getAdminToken() {
+    public Mono<String> getAdminToken() {
         return webClient.post()
                 .uri(KEYCLOAK_URL + "/realms/master/protocol/openid-connect/token")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -169,7 +172,7 @@ public class AuthServiceImpl implements AuthService {
                 .doOnError(e -> log.error("Failed to retrieve admin token: {}", e.getMessage()));
     }
 
-    private Mono<String> createUserInKeycloak(String adminToken, CreateUserRequest request) {
+    public Mono<String> createUserInKeycloak(String adminToken, CreateUserRequest request) {
         KeycloakUserDto keycloakUserDto = new KeycloakUserDto(request);
 
         return webClient.post()
