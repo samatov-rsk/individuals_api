@@ -19,11 +19,13 @@ public class SecurityConfig {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/swagger-ui.html",
-                                "/swagger-ui/**",
+                        .pathMatchers(
+                                "/webjars/swagger-ui/index.html",
+                                "/webjars/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml",
-                                "/v3/api-docs.json")
+                                "/v3/api-docs.json",
+                                "/v3/api-docs")
                         .permitAll()
                         .pathMatchers("/v1/auth/registration",
                                 "/v1/auth/login",
