@@ -1,0 +1,48 @@
+{
+  "realm": "individuals",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "individuals-api",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "5N7lXXF9M56qA77Do0c0lsRcQzU3gk4v",
+      "directAccessGrantsEnabled": true,
+      "publicClient": false,
+      "redirectUris": ["http://localhost:8080/*"],
+      "webOrigins": ["http://localhost:8080"],
+      "defaultRoles": ["USER"]
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "testuser@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Admin role with all privileges"
+      },
+      {
+        "name": "USER",
+        "description": "User role with limited privileges"
+      }
+    ]
+  }
+}
