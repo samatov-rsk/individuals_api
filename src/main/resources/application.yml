@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8089
 
 spring:
   application:
@@ -22,7 +22,7 @@ spring:
             issuer-uri: ${KEYCLOAK_ISSUER_URI}
             user-name-attribute: email
 
-KEYCLOAK_ISSUER_URI: http://localhost:8081/auth/realms/individuals
+KEYCLOAK_ISSUER_URI: http://localhost:8085/realms/individuals
 KEYCLOAK_CLIENT_ID: individuals-api
 KEYCLOAK_CLIENT_SECRET: 5N7lXXF9M56qA77Do0c0lsRcQzU3gk4v
 
@@ -30,5 +30,5 @@ keycloak:
   admin-username: admin
   admin-password: admin
   realm: individuals
-  auth-server-url: http://localhost:8081/auth
+  auth-server-url: http://localhost:8085
 

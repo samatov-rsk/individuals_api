@@ -1,27 +1,38 @@
-version: '3.8'
-
 services:
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-    entrypoint: >
-      /opt/keycloak/bin/kc.sh start-dev
-      --http-relative-path=/auth
+      - KC_DB=dev-mem
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KEYCLOAK_IMPORT=/opt/keycloak/data/import/keycloak-realm-config.json
+    volumes:
+      - ./data/import:/opt/keycloak/data/import
+    command:
+      - start-dev
+      - --import-realm
     ports:
-      - "8081:8080"
+      - "8085:8080"
+    networks:
+      - app_network
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - KEYCLOAK_ISSUER_URI=http://localhost:8081/auth/realms/individuals
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/individuals
       - KEYCLOAK_CLIENT_ID=individuals-api
       - KEYCLOAK_CLIENT_SECRET=5N7lXXF9M56qA77Do0c0lsRcQzU3gk4v
+    volumes:
+      - ./keycloak-realm-config.json:/keycloak-realm-config.json
     ports:
-      - "8080:8080"
+      - "8090:8090"
     depends_on:
       - keycloak
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
