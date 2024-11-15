@@ -2,6 +2,10 @@ server:
   port: 8089
 
 spring:
+#  main:
+#    lazy-initialization: true
+#  lifecycle:
+#    timeout-per-shutdown-phase: 60s
   application:
     name: individuals-api
   security:
@@ -22,7 +26,7 @@ spring:
             issuer-uri: ${KEYCLOAK_ISSUER_URI}
             user-name-attribute: email
 
-KEYCLOAK_ISSUER_URI: http://localhost:8085/realms/individuals
+KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/individuals
 KEYCLOAK_CLIENT_ID: individuals-api
 KEYCLOAK_CLIENT_SECRET: 5N7lXXF9M56qA77Do0c0lsRcQzU3gk4v
 
@@ -30,5 +34,5 @@ keycloak:
   admin-username: admin
   admin-password: admin
   realm: individuals
-  auth-server-url: http://localhost:8085
+  auth-server-url: http://keycloak:8080
 

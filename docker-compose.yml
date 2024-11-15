@@ -13,26 +13,27 @@ services:
       - --import-realm
     ports:
       - "8085:8080"
-    networks:
-      - app_network
 
-  app:
+    networks:
+      - app-network
+
+  individuals-api:
     build:
       context: .
       dockerfile: Dockerfile
+    ports:
+      - "8089:8089"
     environment:
+      - SPRING_PROFILES_ACTIVE=prod
       - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/individuals
       - KEYCLOAK_CLIENT_ID=individuals-api
       - KEYCLOAK_CLIENT_SECRET=5N7lXXF9M56qA77Do0c0lsRcQzU3gk4v
-    volumes:
-      - ./keycloak-realm-config.json:/keycloak-realm-config.json
-    ports:
-      - "8090:8090"
     depends_on:
       - keycloak
+
     networks:
-      - app_network
+      - app-network
 
 networks:
-  app_network:
+  app-network:
     driver: bridge
